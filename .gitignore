@@ -11,6 +11,7 @@ __pycache__/
 *.pkl
 *.json
 # Distribution / packaging
+*.txt
 .Python
 build/
 develop-eggs/
