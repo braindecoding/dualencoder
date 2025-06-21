@@ -138,9 +138,31 @@ class CrossAttentionBlock(nn.Module):
 
         x = self.norm(x)
 
+        # Check condition tensor
+        if condition is None or condition.numel() == 0:
+            # Skip conditioning if condition is empty
+            x = F.silu(x)
+            x = self.conv(x)
+            return x + residual
+
         # Get conditioning parameters
         condition_params = self.condition_proj(condition)  # (batch, channels * 2)
+
+        # Check if condition_params is valid
+        if condition_params.numel() == 0:
+            # Skip conditioning if projection failed
+            x = F.silu(x)
+            x = self.conv(x)
+            return x + residual
+
         scale, shift = condition_params.chunk(2, dim=1)  # (batch, channels) each
+
+        # Check if scale and shift are valid
+        if scale.numel() == 0 or shift.numel() == 0:
+            # Skip conditioning if chunks are empty
+            x = F.silu(x)
+            x = self.conv(x)
+            return x + residual
 
         # Apply conditioning
         scale = scale.view(batch_size, channels, 1, 1)
