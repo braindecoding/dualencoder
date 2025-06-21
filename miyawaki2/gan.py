@@ -6,7 +6,6 @@ Advanced GAN with ConvTranspose generator and discriminator
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class GAN_Decoder(nn.Module):
     def __init__(self, correlation_dim=512, output_shape=(28, 28)):
@@ -38,8 +37,9 @@ class GAN_Decoder(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(),
             
-            nn.Conv2d(64, 1, 5, 1, 2),              # 32x32 → 28x28 (crop)
-            nn.Sigmoid()
+            nn.Conv2d(64, 1, 5, 1, 2),              # 32x32 → 32x32
+            nn.Sigmoid(),
+            nn.AdaptiveAvgPool2d((28, 28))       # 32x32 → 28x28 (resize)
         )
         
         # Discriminator untuk adversarial training

@@ -42,9 +42,11 @@ class MiyawakiDataset(Dataset):
         stim = self.stim_data[idx]  # [784] or [28, 28]
         label = self.labels[idx]
 
-        # Reshape stimulus to 28x28 if needed
+        # Reshape stimulus to [1, 28, 28] format for CNN
         if len(stim.shape) == 1 and stim.shape[0] == 784:
-            stim = stim.reshape(28, 28)
+            stim = stim.reshape(1, 28, 28)  # Add channel dimension
+        elif len(stim.shape) == 2 and stim.shape == (28, 28):
+            stim = stim.unsqueeze(0)  # Add channel dimension: [28, 28] → [1, 28, 28]
 
         if self.transform:
             stim = self.transform(stim)
