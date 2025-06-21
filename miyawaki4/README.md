@@ -1,3 +1,23 @@
+# Create Embedding
+## CLIP sudah "mengerti" semantic content
+image_embedding = [0.2, -0.3, 0.8, ...]  # Representasi "mata bulat"
+fmri_embedding = [?, ?, ?, ...]           # Kita ajari untuk sama
+
+## Setelah training:
+new_fmri → fMRI_encoder → [0.2, -0.3, 0.8, ...] # "mata bulat"
+
+# Inference Stage
+
+```sh
+# CLIP tidak diperlukan lagi!
+fmri_emb = fmri_encoder(new_fmri)  # Sudah "trained" untuk semantic understanding
+
+# Use embedding untuk:
+# - Retrieval: cari gambar mirip
+# - Generation: feed ke decoder
+# - Classification: feed ke classifier
+```
+
 
 ```sh
 # Load model
