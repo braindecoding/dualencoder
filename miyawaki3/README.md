@@ -1,4 +1,10 @@
-Baik! Mari kita implementasikan Contrastive Learning + CLIP untuk dataset Miyawaki. Saya akan membuat implementasi lengkap yang bisa langsung digunakan:Implementasi lengkap sudah dibuat! Mari saya jelaskan komponen-komponen utama dan cara penggunaannya:
+# CLIP Embedding
+## Kita mengajarkan model: "fMRI ini artinya sama dengan image ini"
+fmri_embedding = fmri_encoder(fmri_signal)      # "Kata asing"
+image_embedding = clip_model.encode_image(img)  # "Terjemahan yang benar"
+
+## Loss: Paksa fMRI embedding mirip dengan CLIP embedding
+loss = contrastive_loss(fmri_embedding, image_embedding)
 
 ## Komponen Utama
 
