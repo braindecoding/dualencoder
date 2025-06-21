@@ -1,114 +1,104 @@
-# CLIP Embedding
-## Kita mengajarkan model: "fMRI ini artinya sama dengan image ini"
-fmri_embedding = fmri_encoder(fmri_signal)      # "Kata asing"
-image_embedding = clip_model.encode_image(img)  # "Terjemahan yang benar"
 
-## Loss: Paksa fMRI embedding mirip dengan CLIP embedding
-loss = contrastive_loss(fmri_embedding, image_embedding)
-
-## Komponen Utama
-
-**1. MiyawakiDataset**
-- Handles loading fMRI (967 voxels) dan stimuli (28x28 images)
-- Converts stimuli ke format yang kompatibel dengan CLIP
-- Applies proper preprocessing untuk CLIP input
-
-**2. fMRIEncoder** 
-- Neural network yang map fMRI signals ke CLIP embedding space (512-dim)
-- Architecture: 967 → 2048 → 1024 → 512 dengan BatchNorm dan Dropout
-- Output di-normalize untuk contrastive learning
-
-**3. ContrastiveLoss**
-- Symmetric contrastive loss untuk align fMRI dan image embeddings
-- Temperature parameter untuk control learning dynamics
-
-## Cara Penggunaan
-
-**Step 1: Persiapan Data**
-```python
-# Pastikan file .mat Anda memiliki struktur:
-# - fmriTrn: (n_samples, 967)
-# - stimTrn: (n_samples, 784) 
-# - fmriTest: (n_samples, 967)
-# - stimTest: (n_samples, 784)
-
+```sh
+# Load model
 decoder = MiyawakiDecoder()
-decoder.load_data("path/to/miyawaki_data.mat")
+decoder.load_model("miyawaki_contrastive_clip.pth")
+
+# Use for inference
+fmri_input = your_fmri_data  # Shape: (1, 967)
+clip_embedding = decoder.fmri_encoder(fmri_input)  # Shape: (1, 512)
+
+# Compare dengan CLIP image embeddings
+image_embeddings = clip_model.encode_image(images)  # Shape: (N, 512)
+similarities = torch.matmul(clip_embedding, image_embeddings.T)  # Shape: (1, N)
 ```
 
-**Step 2: Training**
-```python
-# Initialize models
-decoder.initialize_models()
 
-# Create dataloaders  
-train_loader, test_loader = decoder.create_dataloaders(batch_size=32)
+🔍 CLIP MODEL TIDAK TERSIMPAN DALAM .PTH
+❌ YANG TIDAK ADA DALAM .PTH:
+🚫 CLIP Model Components:
 
-# Train (akan butuh GPU untuk speed optimal)
-train_losses = decoder.train(train_loader, epochs=100, lr=1e-3)
-```
+✅ CLIP Vision Encoder - TIDAK tersimpan
+✅ CLIP Text Encoder - TIDAK tersimpan
+✅ CLIP Preprocessing - TIDAK tersimpan
+✅ YANG ADA DALAM .PTH:
+Mari saya tunjukkan dengan kode:
 
-**Step 3: Evaluation**
-```python
-# Evaluate dengan retrieval metrics
-results, similarity_matrix = decoder.evaluate(test_loader)
+Read lines 295-301
+runembedding.py
+miyawaki4
+Sekarang mari lihat bagaimana CLIP diinisialisasi:
 
-# Hasil akan show Top-1, Top-5, Top-10 accuracy
-# Top-1 accuracy = berapa % fMRI bisa retrieve correct image di rank 1
-```
+Read lines 122-139
+runembedding.py
+miyawaki4
+📦 JAWABAN LENGKAP: CLIP TIDAK TERSIMPAN DALAM .PTH
+❌ CLIP MODEL TIDAK ADA DALAM .PTH:
+📁 Contents of miyawaki_contrastive_clip.pth:
 
-## Metrics yang Digunakan
+{
+    'fmri_encoder_state_dict': {...},  # ✅ HANYA fMRI encoder weights
+    'scaler': StandardScaler()         # ✅ HANYA data normalization
+}
+🚫 YANG TIDAK TERSIMPAN:
 
-**Retrieval Accuracy:**
-- **Top-k Accuracy**: Persentase fMRI signals yang bisa retrieve correct image dalam top-k candidates
-- **Similarity Matrix**: Cosine similarity antara fMRI embeddings dan image embeddings
+❌ CLIP Vision Encoder (ViT-B/32)
+❌ CLIP Text Encoder
+❌ CLIP Preprocessing parameters
+❌ CLIP model weights
+🔄 MENGAPA CLIP TIDAK DISIMPAN:
+1. 🔒 CLIP Model di-Freeze:
 
-**Expected Performance:**
-- Top-1: ~15-25% (good result untuk 28x28 images)
-- Top-5: ~35-50% 
-- Top-10: ~50-65%
+# Line 127-129
+for param in self.clip_model.parameters():
+    param.requires_grad = False  # CLIP weights tidak berubah
+2. 📥 CLIP Dimuat Ulang Setiap Kali:
 
-## Visualisasi
+# Line 125 - setiap kali load model
+self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
+3. 🎯 Hanya fMRI Encoder yang Ditraining:
 
-Code akan generate:
-1. **Training loss curve** - monitoring convergence
-2. **Retrieval examples** - comparison original vs retrieved images
-3. **Similarity distributions** - ranking patterns
+# Line 163 - hanya fMRI encoder yang dioptimize
+optimizer = optim.Adam(self.fmri_encoder.parameters(), lr=lr, weight_decay=1e-4)
+🔄 PROSES LOAD MODEL:
+📋 Ketika Load Model:
 
-## Tips Optimization
+def load_model(self, filepath):
+    checkpoint = torch.load(filepath)
+    
+    if self.fmri_encoder is None:
+        self.initialize_models()  # ← CLIP dimuat ulang di sini!
+    
+    self.fmri_encoder.load_state_dict(checkpoint['fmri_encoder_state_dict'])
+    self.scaler = checkpoint['scaler']
+🔄 initialize_models() dipanggil yang akan:
 
-**Hyperparameter Tuning:**
-```python
-# Experiment dengan:
-temperature = [0.05, 0.07, 0.1]  # Contrastive loss temperature
-lr = [1e-4, 1e-3, 5e-3]         # Learning rate
-hidden_dims = [[1024, 512], [2048, 1024], [4096, 2048, 1024]]
-```
+# Download/load CLIP model dari internet/cache
+self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
+📊 SIZE COMPARISON:
+📦 File Sizes:
 
-**Architecture Variants:**
-```python
-# Untuk better performance, coba:
-1. Residual connections
-2. Attention mechanisms  
-3. Multi-head projections
-4. Different CLIP models (ViT-L/14, RN50x4)
-```
+💡 IMPLICATIONS:
+✅ ADVANTAGES:
 
-## Troubleshooting
+Smaller file size (18.5 MB vs 350+ MB)
+Always latest CLIP (auto-download updates)
+Consistent CLIP version across environments
+Only custom weights saved (fMRI encoder)
+⚠️ REQUIREMENTS:
 
-**Memory Issues:**
-- Reduce batch_size ke 16 atau 8
-- Use gradient checkpointing
-- Process data dalam chunks
+Internet connection untuk first-time CLIP download
+CLIP library harus terinstall
+CLIP cache akan tersimpan di system (~350 MB)
+🎯 SUMMARY:
+🔑 KEY POINTS:
 
-**Convergence Issues:**
-- Lower learning rate
-- Increase temperature
-- Add warm-up schedule
+✅ .pth hanya berisi fMRI encoder + scaler
+❌ CLIP model TIDAK tersimpan dalam .pth
+🔄 CLIP dimuat ulang setiap kali load model
+🔒 CLIP di-freeze, tidak berubah selama training
+📦 File size kecil karena hanya custom weights
+🧠 ANALOGI:
+Seperti menyimpan "adapter" yang menghubungkan brain ke CLIP, tapi CLIP-nya sendiri tetap diambil dari "perpustakaan" (OpenAI) setiap kali dibutuhkan.
 
-**Poor Retrieval:**
-- Check data normalization
-- Verify CLIP preprocessing
-- Try different architectures
-
-Apakah Anda sudah punya file .mat dataset Miyawaki? Jika ya, kita bisa langsung test implementasi ini! Jika belum, saya bisa bantu generate synthetic data untuk testing pipeline.
+Model .pth ini adalah "brain-to-CLIP translator" bukan "complete brain-image system"! 🧠→🔗→🖼️

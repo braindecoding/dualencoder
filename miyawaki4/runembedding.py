@@ -305,7 +305,7 @@ class MiyawakiDecoder:
         checkpoint = torch.load(filepath, map_location=self.device, weights_only=False)
 
         if self.fmri_encoder is None:
-            self.initialize_models()
+            self.initialize_models()  # ← CLIP dimuat ulang di sini!
 
         self.fmri_encoder.load_state_dict(checkpoint['fmri_encoder_state_dict'])
         self.scaler = checkpoint['scaler']
