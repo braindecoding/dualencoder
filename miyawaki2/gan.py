@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+GAN Decoder for Miyawaki Dataset
+Advanced GAN with ConvTranspose generator and discriminator
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class GAN_Decoder(nn.Module):
     def __init__(self, correlation_dim=512, output_shape=(28, 28)):
         super().__init__()

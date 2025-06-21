@@ -32,24 +32,20 @@ accuracy_gan = Evaluate(Y_result_gan, Y_test)
 
 ## 📁 Project Structure
 
-### Core Implementation
-- **`miyawaki/`** - Complete Miyawaki dataset implementation ✅
+### Core Implementations
+- **`miyawaki/`** - Complete working implementation ✅
   - Dual encoder architecture (5.4M parameters)
   - 83.3% cross-modal retrieval accuracy
   - Diffusion & GAN generative backends
   - Comprehensive evaluation framework
 
-### Legacy Components
-- **`clip.py`** - CLIP correlation learning module
-- **`fmriencoder.py`** - fMRI encoder architecture
-- **`stimencoder.py`** - Visual stimulus encoder
-- **`diffusion.py`** - Diffusion decoder implementation
-- **`gan.py`** - GAN decoder implementation
-- **`corrlearning.py`** - Correlation learning utilities
-- **`latentlearn.py`** - Latent space training
-- **`genbetrain.py`** - Generative backend training
-- **`metriks.py`** - Evaluation metrics
-- **`analisys.py`** - Analysis utilities
+- **`miyawaki2/`** - Advanced modular architecture 🚧
+  - Sophisticated component-based design
+  - OpenAI CLIP integration
+  - U-Net diffusion with proper scheduler
+  - Advanced GAN with discriminator
+  - Three-phase training pipeline
+  - **Status**: Fixing dependencies and integration
 
 ### Datasets
 - **`dataset/`** - fMRI-visual paired datasets
@@ -65,7 +61,7 @@ accuracy_gan = Evaluate(Y_result_gan, Y_test)
 
 ## 🚀 Quick Start
 
-### 1. Miyawaki Dataset (Recommended)
+### 1. Working Implementation (Recommended)
 ```bash
 cd miyawaki
 python miyawaki_dual_encoder.py      # Train dual encoder
@@ -73,7 +69,14 @@ python miyawaki_evaluation.py        # Evaluate performance
 python miyawaki_generative_backend.py # Train generative backends
 ```
 
-### 2. Dataset Analysis
+### 2. Advanced Modular Architecture (Development)
+```bash
+cd miyawaki2
+# Note: Currently fixing dependencies and integration
+# Will be the primary implementation once completed
+```
+
+### 3. Dataset Analysis
 ```bash
 python analyze_datasets.py           # Analyze all datasets
 python detailed_image_analysis.py    # Detailed image analysis
@@ -126,11 +129,17 @@ scikit-learn
 
 ## 🏆 Status
 
-- ✅ **Miyawaki Dataset**: Complete implementation with strong results
+### Implementation Status
+- ✅ **Miyawaki (Working)**: Complete implementation with 83.3% accuracy
+- 🚧 **Miyawaki2 (Advanced)**: Modular architecture under development
 - 🔄 **CRELL Dataset**: Ready for implementation
 - 🔄 **DIGIT69 Dataset**: Ready for implementation
 - 🔄 **MINDBIGDATA Dataset**: Ready for implementation
-- ✅ **Framework**: Scalable and modular architecture
+
+### Architecture Status
+- ✅ **Monolithic Design**: Proven working implementation
+- 🚧 **Modular Design**: Advanced architecture with dependency fixes needed
+- ✅ **Evaluation Framework**: Comprehensive metrics and visualization
 
 ---
 

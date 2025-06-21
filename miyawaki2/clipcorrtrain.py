@@ -1,11 +1,37 @@
+#!/usr/bin/env python3
+"""
+CLIP-style Correlation Learning
+Integrates with OpenAI CLIP for advanced cross-modal learning
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+try:
+    import clip as openai_clip  # Rename to avoid conflict
+    CLIP_AVAILABLE = True
+except ImportError:
+    print("Warning: OpenAI CLIP not available. Install with: pip install git+https://github.com/openai/CLIP.git")
+    CLIP_AVAILABLE = False
+    openai_clip = None
+
 class CLIP_Correlation(nn.Module):
     def __init__(self, latent_dim=512):
         super().__init__()
         self.latent_dim = latent_dim
         
-        # CLIP model untuk reference
-        self.clip_model, _ = clip.load('ViT-B/32')
-        self.clip_model.eval()
+        # CLIP model untuk reference (optional)
+        self.clip_model = None
+        if CLIP_AVAILABLE:
+            try:
+                self.clip_model, _ = openai_clip.load('ViT-B/32', device='cpu')
+                self.clip_model.eval()
+                print("OpenAI CLIP model loaded successfully")
+            except Exception as e:
+                print(f"Warning: Could not load CLIP model: {e}")
+                self.clip_model = None
+        else:
+            print("CLIP model not available - using standalone correlation learning")
         
         # Correlation learning network
         self.correlation_net = nn.Sequential(

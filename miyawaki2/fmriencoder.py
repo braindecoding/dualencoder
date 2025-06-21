@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+fMRI Encoder for Miyawaki Dataset
+Advanced architecture: 967 → 2048 → 1024 → 512
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class fMRI_Encoder(nn.Module):
     def __init__(self, fmri_dim=967, latent_dim=512):
         super().__init__()

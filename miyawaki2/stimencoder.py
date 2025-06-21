@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Visual Stimulus Encoder for Miyawaki Dataset
+CNN architecture for 28x28 images → 512 latent features
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class Shape_Encoder(nn.Module):
     def __init__(self, latent_dim=512):
         super().__init__()
