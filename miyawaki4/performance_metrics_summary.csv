@@ -1,0 +1,11 @@
+Category,Metric,Mean,Std,Range,Unit,Higher_Better
+Computer Vision,Pixel Correlation (PixCorr),0.8602,0.1093,"[0.6786, 0.9997]",correlation,Yes
+Computer Vision,Structural Similarity (SSIM),0.9018,0.0727,"[0.7880, 0.9980]",similarity,Yes
+Computer Vision,Mean Squared Error (MSE),0.060753,0.050757,"[0.000060, 0.136699]",error,No
+Computer Vision,Peak Signal-to-Noise Ratio (PSNR),16.50,9.45,"[8.64, 42.23]",dB,Yes
+Deep Learning,CLIP Similarity,0.9175,0.0402,"[0.8574, 0.9990]",cosine similarity,Yes
+Deep Learning,Inception Distance,24.0723,5.4379,"[13.1270, 34.1374]",distance,No
+Binary-Specific,Binary Accuracy,0.9392,0.0508,"[0.8633, 0.9999]",ratio/accuracy,Yes
+Binary-Specific,Dice Coefficient,0.9008,0.0806,"[0.7516, 0.9998]",ratio/accuracy,Yes
+Binary-Specific,Jaccard Index,0.8289,0.1291,"[0.6020, 0.9996]",ratio/accuracy,Yes
+Binary-Specific,Edge Similarity,0.9861,0.0108,"[0.9595, 0.9998]",ratio/accuracy,Yes
