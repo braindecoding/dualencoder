@@ -12,7 +12,13 @@ clip_embedding = decoder.fmri_encoder(fmri_input)  # Shape: (1, 512)
 image_embeddings = clip_model.encode_image(images)  # Shape: (N, 512)
 similarities = torch.matmul(clip_embedding, image_embeddings.T)  # Shape: (1, N)
 ```
+fMRI Data → fMRI Encoder → CLIP Embedding (512D)
+Images → CLIP Vision → CLIP Embedding (512D)
 
+
+miyawaki4_embeddings.npz
+miyawaki4_embeddings.pkl
+miyawaki4_embeddings_metadata.json
 
 🔍 CLIP MODEL TIDAK TERSIMPAN DALAM .PTH
 ❌ YANG TIDAK ADA DALAM .PTH:
