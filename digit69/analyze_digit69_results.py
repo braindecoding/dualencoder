@@ -15,11 +15,11 @@ import torchvision.transforms as transforms
 from runembedding import MiyawakiDecoder
 
 def load_trained_model():
-    """Load the trained miyawaki3 model"""
-    print("🔍 Loading Trained Miyawaki3 Model")
+    """Load the trained digit69 model"""
+    print("🔍 Loading Trained Digit69 Model")
     print("=" * 50)
-    
-    model_path = "miyawaki_contrastive_clip.pth"
+
+    model_path = "digit69_contrastive_clip.pth"
     if not Path(model_path).exists():
         print(f"❌ Model file not found: {model_path}")
         print("💡 Please run runembedding.py first to train the model")
@@ -29,7 +29,7 @@ def load_trained_model():
     decoder = MiyawakiDecoder()
     
     # Load data to get proper dimensions
-    mat_file_path = "../dataset/miyawaki_structured_28x28.mat"
+    mat_file_path = "../dataset/digit69_28x28.mat"
     decoder.load_data(mat_file_path)
     
     # Initialize models
@@ -95,7 +95,7 @@ def create_similarity_analysis(fmri_embeddings, image_embeddings, labels):
     
     # Create visualization
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('Miyawaki3 CLIP-based Cross-Modal Analysis', fontsize=16, fontweight='bold')
+    fig.suptitle('Digit69 CLIP-based Cross-Modal Analysis', fontsize=16, fontweight='bold')
     
     # 1. Similarity Matrix Heatmap
     im1 = axes[0, 0].imshow(similarity_matrix.numpy(), cmap='viridis', aspect='auto')
@@ -184,10 +184,10 @@ def create_similarity_analysis(fmri_embeddings, image_embeddings, labels):
     axes[1, 1].grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('miyawaki3_similarity_analysis.png', dpi=300, bbox_inches='tight')
+    plt.savefig('digit69_similarity_analysis.png', dpi=300, bbox_inches='tight')
     plt.show()
-    
-    print(f"💾 Similarity analysis saved as 'miyawaki3_similarity_analysis.png'")
+
+    print(f"💾 Similarity analysis saved as 'digit69_similarity_analysis.png'")
     
     return similarity_matrix, ranks
 
@@ -212,7 +212,7 @@ def create_retrieval_examples(decoder, similarity_matrix, n_examples=6):
     # Create visualization
     n_examples = min(n_examples, similarity_matrix.shape[0])
     fig, axes = plt.subplots(n_examples, 4, figsize=(16, 4*n_examples))
-    fig.suptitle('Miyawaki3 Cross-Modal Retrieval Examples', fontsize=16, fontweight='bold')
+    fig.suptitle('Digit69 Cross-Modal Retrieval Examples', fontsize=16, fontweight='bold')
     
     for i in range(n_examples):
         # Get top-3 retrieved images
@@ -251,10 +251,10 @@ def create_retrieval_examples(decoder, similarity_matrix, n_examples=6):
     axes[0, 3].set_ylabel('Top-3', rotation=90, fontsize=12, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig('miyawaki3_retrieval_examples.png', dpi=300, bbox_inches='tight')
+    plt.savefig('digit69_retrieval_examples.png', dpi=300, bbox_inches='tight')
     plt.show()
-    
-    print(f"💾 Retrieval examples saved as 'miyawaki3_retrieval_examples.png'")
+
+    print(f"💾 Retrieval examples saved as 'digit69_retrieval_examples.png'")
 
 def create_performance_summary(ranks, similarity_matrix):
     """Create performance summary visualization"""
@@ -262,7 +262,7 @@ def create_performance_summary(ranks, similarity_matrix):
     print("=" * 50)
     
     fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-    fig.suptitle('Miyawaki3 Performance Summary', fontsize=16, fontweight='bold')
+    fig.suptitle('Digit69 Performance Summary', fontsize=16, fontweight='bold')
     
     # 1. Rank Distribution
     axes[0, 0].hist(ranks, bins=range(1, max(ranks)+2), alpha=0.7, color='skyblue', edgecolor='black')
@@ -359,10 +359,10 @@ def create_performance_summary(ranks, similarity_matrix):
     axes[1, 1].set_title('Performance Metrics Summary', fontweight='bold', pad=20)
     
     plt.tight_layout()
-    plt.savefig('miyawaki3_performance_summary.png', dpi=300, bbox_inches='tight')
+    plt.savefig('digit69_performance_summary.png', dpi=300, bbox_inches='tight')
     plt.show()
-    
-    print(f"💾 Performance summary saved as 'miyawaki3_performance_summary.png'")
+
+    print(f"💾 Performance summary saved as 'digit69_performance_summary.png'")
     
     return {
         'top1_accuracy': top1_acc,
@@ -376,7 +376,7 @@ def create_performance_summary(ranks, similarity_matrix):
 
 def main():
     """Main analysis function"""
-    print("🔍 Miyawaki3 Results Analysis")
+    print("🔍 Digit69 Results Analysis")
     print("=" * 60)
     
     # Load trained model
@@ -398,7 +398,7 @@ def main():
     
     # Print final summary
     print("\n" + "=" * 60)
-    print("📋 MIYAWAKI3 ANALYSIS SUMMARY")
+    print("📋 DIGIT69 ANALYSIS SUMMARY")
     print("=" * 60)
     
     print(f"🎯 Cross-Modal Retrieval Performance:")
@@ -416,9 +416,9 @@ def main():
     print(f"  Similarity Gap: {metrics['mean_correct_similarity'] - metrics['mean_incorrect_similarity']:.3f}")
     
     print(f"\n📁 Generated Visualizations:")
-    print(f"  - miyawaki3_similarity_analysis.png")
-    print(f"  - miyawaki3_retrieval_examples.png")
-    print(f"  - miyawaki3_performance_summary.png")
+    print(f"  - digit69_similarity_analysis.png")
+    print(f"  - digit69_retrieval_examples.png")
+    print(f"  - digit69_performance_summary.png")
     
     print(f"\n✅ Analysis completed successfully!")
 

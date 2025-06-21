@@ -38,7 +38,7 @@ class MiyawakiDataset(Dataset):
 
 class fMRIEncoder(nn.Module):
     """Encoder untuk mapping fMRI ke CLIP embedding space"""
-    def __init__(self, fmri_dim=967, clip_dim=512, hidden_dims=[2048, 1024]):
+    def __init__(self, fmri_dim=3092, clip_dim=512, hidden_dims=[4096, 2048, 1024]):
         super().__init__()
         
         layers = []
@@ -100,9 +100,9 @@ class MiyawakiDecoder:
         data = loadmat(mat_file_path)
         
         # Extract data
-        fmri_train = data['fmriTrn']  # (n_samples, 967)
+        fmri_train = data['fmriTrn']  # (n_samples, 3092)
         stim_train = data['stimTrn']  # (n_samples, 784)
-        fmri_test = data['fmriTest']  # (n_samples, 967)
+        fmri_test = data['fmriTest']  # (n_samples, 3092)
         stim_test = data['stimTest']  # (n_samples, 784)
         
         print(f"Training: fMRI {fmri_train.shape}, Stimuli {stim_train.shape}")
@@ -130,9 +130,9 @@ class MiyawakiDecoder:
             
         print("Initializing fMRI encoder...")
         self.fmri_encoder = fMRIEncoder(
-            fmri_dim=967, 
+            fmri_dim=3092,
             clip_dim=512,
-            hidden_dims=[2048, 1024]
+            hidden_dims=[4096, 2048, 1024]
         ).to(self.device)
         
         print(f"fMRI Encoder parameters: {sum(p.numel() for p in self.fmri_encoder.parameters())}")
@@ -315,7 +315,7 @@ def test_dataset_path():
     """Test if dataset path is accessible"""
     from pathlib import Path
 
-    dataset_path = Path("../dataset/miyawaki_structured_28x28.mat")
+    dataset_path = Path("../dataset/digit69_28x28.mat")
 
     if dataset_path.exists():
         print(f"✅ Dataset found: {dataset_path.absolute()}")
@@ -342,7 +342,7 @@ def main():
     decoder = MiyawakiDecoder()
 
     # Load data
-    mat_file_path = "../dataset/miyawaki_structured_28x28.mat"  # Updated path
+    mat_file_path = "../dataset/digit69_28x28.mat"  # Updated path for digit69
     decoder.load_data(mat_file_path)
     
     # Initialize models
@@ -369,13 +369,13 @@ def main():
     decoder.visualize_results(test_loader, similarity_matrix)
     
     # Save model
-    decoder.save_model("miyawaki_contrastive_clip.pth")
+    decoder.save_model("digit69_contrastive_clip.pth")
     
     return decoder, results
 
 if __name__ == "__main__":
     # Run the main function
-    print("🚀 Starting Miyawaki3 CLIP-based Training")
+    print("🚀 Starting Digit69 CLIP-based Training")
     print("=" * 50)
 
     try:
