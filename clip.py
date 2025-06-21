@@ -25,9 +25,9 @@ class CLIP_Correlation(nn.Module):
         # Learnable temperature parameter
         self.temperature = nn.Parameter(torch.tensor(0.07))
     
-    def forward(self, X_lat, Y_lat):
+    def forward(self, fmri_latent, stim_latent):
         # Concatenate latent representations
-        combined = torch.cat([X_lat, Y_lat], dim=1)
+        combined = torch.cat([fmri_latent, stim_latent], dim=1)
         
         # Learn correlation
         correlation_embedding = self.correlation_net(combined)
@@ -35,26 +35,26 @@ class CLIP_Correlation(nn.Module):
         
         return correlation_embedding
     
-    def compute_contrastive_loss(self, X_lat, Y_lat):
+    def compute_contrastive_loss(self, fmri_latent, stim_latent):
         """CLIP-style contrastive loss untuk training"""
-        batch_size = X_lat.size(0)
+        batch_size = fmri_latent.size(0)
         
         # Compute correlation embeddings
-        corr_x = self.correlation_net(torch.cat([X_lat, Y_lat], dim=1))
-        corr_y = self.correlation_net(torch.cat([Y_lat, X_lat], dim=1))
+        corr_fmri = self.correlation_net(torch.cat([fmri_latent, stim_latent], dim=1))
+        corr_stim = self.correlation_net(torch.cat([stim_latent, fmri_latent], dim=1))
         
         # Normalize
-        corr_x = F.normalize(corr_x, p=2, dim=1)
-        corr_y = F.normalize(corr_y, p=2, dim=1)
+        corr_fmri = F.normalize(corr_fmri, p=2, dim=1)
+        corr_stim = F.normalize(corr_stim, p=2, dim=1)
         
         # Compute similarity matrix
-        similarity = torch.matmul(corr_x, corr_y.T) / self.temperature
+        similarity = torch.matmul(corr_fmri, corr_stim.T) / self.temperature
         
         # Labels (diagonal elements should be maximum)
-        labels = torch.arange(batch_size, device=X_lat.device)
+        labels = torch.arange(batch_size, device=fmri_latent.device)
         
         # Contrastive loss (both directions)
-        loss_x2y = F.cross_entropy(similarity, labels)
-        loss_y2x = F.cross_entropy(similarity.T, labels)
+        loss_fmri2stim = F.cross_entropy(similarity, labels)
+        loss_stim2fmri = F.cross_entropy(similarity.T, labels)
         
-        return (loss_x2y + loss_y2x) / 2
+        return (loss_fmri2stim + loss_stim2fmri) / 2

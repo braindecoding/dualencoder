@@ -1,27 +1,33 @@
-def train_generative_backend(CLIP_corr, X_test, Y_test, backend='diffusion'):
-    """Train Diffusion atau GAN decoder"""
+def evaluate_decoding_performance(stimPred, stimTest):
+    """Comprehensive evaluation untuk Miyawaki shapes"""
     
-    if backend == 'diffusion':
-        for epoch in range(diffusion_epochs):
-            # Diffusion training
-            Y_pred = diffusion_decoder(CLIP_corr, X_test)
-            diff_loss = F.mse_loss(Y_pred, Y_test)
-            
-            diff_optimizer.zero_grad()
-            diff_loss.backward()
-            diff_optimizer.step()
+    metrics = {
+        # Pixel-level accuracy
+        'mse': F.mse_loss(stimPred, stimTest),
+        'ssim': structural_similarity(stimPred, stimTest),
+        'psnr': peak_signal_noise_ratio(stimPred, stimTest),
+        
+        # Perceptual metrics
+        'lpips': lpips_distance(stimPred, stimTest),
+        'clip_similarity': clip_cosine_similarity(stimPred, stimTest),
+        
+        # Shape-specific metrics untuk Miyawaki
+        'shape_accuracy': shape_classification_accuracy(stimPred, stimTest),
+        'contour_similarity': contour_matching_score(stimPred, stimTest),
+        'edge_detection_score': edge_preservation_metric(stimPred, stimTest),
+        
+        # Correlation metrics
+        'latent_correlation': correlation_in_latent_space(stimPred, stimTest),
+        'semantic_preservation': semantic_consistency_score(stimPred, stimTest)
+    }
     
-    elif backend == 'gan':
-        for epoch in range(gan_epochs):
-            # GAN training (alternating G and D)
-            Y_pred = gan_decoder(CLIP_corr, X_test)
-            
-            # Generator loss
-            gen_loss = gan_generator_loss(Y_pred, Y_test)
-            
-            # Discriminator loss  
-            disc_loss = gan_discriminator_loss(Y_pred, Y_test)
-            
-            # Optimize alternately
-            optimize_generator(gen_loss)
-            optimize_discriminator(disc_loss)
+    return metrics
+
+# Specific evaluation functions
+def evaluate_diffusion_performance():
+    metrics_diff = evaluate_decoding_performance(stimPred_diff, stimTest)
+    return metrics_diff
+
+def evaluate_gan_performance():
+    metrics_gan = evaluate_decoding_performance(stimPred_gan, stimTest)
+    return metrics_gan

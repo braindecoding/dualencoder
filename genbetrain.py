@@ -1,11 +1,11 @@
-def train_generative_backend(CLIP_corr, X_test, Y_test, backend='diffusion'):
+def train_generative_backend(CLIP_corr, fmriTest_latent, stimTest, backend='diffusion'):
     """Train Diffusion atau GAN decoder"""
     
     if backend == 'diffusion':
         for epoch in range(diffusion_epochs):
             # Diffusion training
-            Y_pred = diffusion_decoder(CLIP_corr, X_test)
-            diff_loss = F.mse_loss(Y_pred, Y_test)
+            stimPred_diff = diffusion_decoder(CLIP_corr, fmriTest_latent)
+            diff_loss = F.mse_loss(stimPred_diff, stimTest)
             
             diff_optimizer.zero_grad()
             diff_loss.backward()
@@ -14,13 +14,13 @@ def train_generative_backend(CLIP_corr, X_test, Y_test, backend='diffusion'):
     elif backend == 'gan':
         for epoch in range(gan_epochs):
             # GAN training (alternating G and D)
-            Y_pred = gan_decoder(CLIP_corr, X_test)
+            stimPred_gan = gan_decoder(CLIP_corr, fmriTest_latent)
             
             # Generator loss
-            gen_loss = gan_generator_loss(Y_pred, Y_test)
+            gen_loss = gan_generator_loss(stimPred_gan, stimTest)
             
             # Discriminator loss  
-            disc_loss = gan_discriminator_loss(Y_pred, Y_test)
+            disc_loss = gan_discriminator_loss(stimPred_gan, stimTest)
             
             # Optimize alternately
             optimize_generator(gen_loss)
