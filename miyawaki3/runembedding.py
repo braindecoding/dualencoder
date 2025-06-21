@@ -302,11 +302,11 @@ class MiyawakiDecoder:
     
     def load_model(self, filepath):
         """Load trained model"""
-        checkpoint = torch.load(filepath, map_location=self.device)
-        
+        checkpoint = torch.load(filepath, map_location=self.device, weights_only=False)
+
         if self.fmri_encoder is None:
             self.initialize_models()
-        
+
         self.fmri_encoder.load_state_dict(checkpoint['fmri_encoder_state_dict'])
         self.scaler = checkpoint['scaler']
         print(f"Model loaded from {filepath}")
