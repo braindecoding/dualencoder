@@ -47,12 +47,23 @@ accuracy_gan = Evaluate(Y_result_gan, Y_test)
   - Three-phase training pipeline
   - **Status**: Fixing dependencies and integration
 
-### Datasets
+### Datasets & Processing
 - **`dataset/`** - fMRI-visual paired datasets
   - `miyawaki_structured_28x28.mat` - 107 train, 12 test samples ✅
   - `crell.mat` - 576 train, 64 test samples
   - `digit69_28x28.mat` - 90 train, 10 test samples
   - `mindbigdata.mat` - 1080 train, 120 test samples
+
+- **`crell/`** - EEG-to-Letter reconstruction ✅
+  - 640 epochs, 64 channels, 500 Hz sampling
+  - 10 letters: a,d,e,f,j,n,o,s,t,v
+  - CORRECT preprocessing pipeline applied
+  - Ready for EEG-to-image modeling
+
+- **`mbd3/`** - MindBigData EEG digit processing 🚧
+  - Multiple model variants and experiments
+  - Enhanced text templates and perceptual guidance
+  - Advanced diffusion models for digit reconstruction
 
 ### Documentation
 - **`dataset_summary_report.md`** - Comprehensive dataset analysis
@@ -106,9 +117,10 @@ python detailed_image_analysis.py    # Detailed image analysis
 ## 🎯 Next Steps
 
 ### Immediate
-1. **Scale to CRELL dataset** (576 samples, 10 classes)
-2. **Test MINDBIGDATA** (1080 samples, largest dataset)
-3. **Cross-dataset generalization** experiments
+1. **Implement EEG-to-Letter models** for Crell dataset (640 epochs, 10 letters) ✅
+2. **Scale to CRELL fMRI dataset** (576 samples, 10 classes)
+3. **Test MINDBIGDATA** (1080 samples, largest dataset)
+4. **Cross-dataset generalization** experiments
 
 ### Research Directions
 1. **Attention mechanisms** for better feature alignment
@@ -132,7 +144,8 @@ scikit-learn
 ### Implementation Status
 - ✅ **Miyawaki (Working)**: Complete implementation with 83.3% accuracy
 - 🚧 **Miyawaki2 (Advanced)**: Modular architecture under development
-- 🔄 **CRELL Dataset**: Ready for implementation
+- ✅ **Crell EEG Dataset**: Processed with CORRECT preprocessing (640 epochs)
+- 🔄 **CRELL fMRI Dataset**: Ready for implementation
 - 🔄 **DIGIT69 Dataset**: Ready for implementation
 - 🔄 **MINDBIGDATA Dataset**: Ready for implementation
 
