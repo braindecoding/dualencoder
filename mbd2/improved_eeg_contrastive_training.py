@@ -21,6 +21,33 @@ warnings.filterwarnings("ignore")
 
 from eeg_transformer_encoder import EEGToEmbeddingModel
 
+class EarlyStopping:
+    """
+    Early stopping to prevent overfitting during long training
+    """
+    def __init__(self, patience=30, min_delta=0.001, restore_best_weights=True):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.restore_best_weights = restore_best_weights
+        self.best_loss = float('inf')
+        self.counter = 0
+        self.best_weights = None
+
+    def __call__(self, val_loss, model=None):
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+            if model is not None and self.restore_best_weights:
+                self.best_weights = model.state_dict().copy()
+        else:
+            self.counter += 1
+
+        return self.counter >= self.patience
+
+    def restore_weights(self, model):
+        if self.best_weights is not None:
+            model.load_state_dict(self.best_weights)
+
 class ImprovedContrastiveLoss(nn.Module):
     """
     Improved contrastive loss with temperature scaling and normalization
@@ -169,8 +196,8 @@ def load_preprocessed_data_for_training():
     
     return eeg_signals, labels
 
-def train_eeg_encoder_improved(eeg_encoder, dataloader, clip_model, clip_preprocess, device, 
-                              num_epochs=100, lr=1e-4, warmup_epochs=10):
+def train_eeg_encoder_improved(eeg_encoder, dataloader, clip_model, clip_preprocess, device,
+                              num_epochs=300, lr=1e-4, warmup_epochs=30, use_early_stopping=True):
     """
     Improved training function with better monitoring and optimization
     """
@@ -198,7 +225,13 @@ def train_eeg_encoder_improved(eeg_encoder, dataloader, clip_model, clip_preproc
     
     # Improved contrastive loss
     contrastive_loss_fn = ImprovedContrastiveLoss(temperature=0.07).to(device)
-    
+
+    # Early stopping
+    early_stopping = None
+    if use_early_stopping:
+        early_stopping = EarlyStopping(patience=30, min_delta=0.001)
+        print(f"   Early stopping: patience={early_stopping.patience}, min_delta={early_stopping.min_delta}")
+
     # Training history
     train_losses = []
     train_accuracies = []
@@ -265,9 +298,19 @@ def train_eeg_encoder_improved(eeg_encoder, dataloader, clip_model, clip_preproc
         
         print(f"Epoch {epoch+1}/{num_epochs} - Loss: {avg_epoch_loss:.4f}, "
               f"Accuracy: {avg_epoch_accuracy:.3f}, LR: {scheduler.get_last_lr()[0]:.6f}")
-        
-        # Save checkpoint every 20 epochs
-        if (epoch + 1) % 20 == 0:
+
+        # Early stopping check
+        if early_stopping is not None:
+            if early_stopping(avg_epoch_loss, eeg_encoder):
+                print(f"\n🛑 Early stopping triggered at epoch {epoch+1}")
+                print(f"   Best loss: {early_stopping.best_loss:.4f}")
+                print(f"   No improvement for {early_stopping.patience} epochs")
+                early_stopping.restore_weights(eeg_encoder)
+                print(f"   Restored best weights")
+                break
+
+        # Save checkpoint every 50 epochs (less frequent for 300 epochs)
+        if (epoch + 1) % 50 == 0:
             checkpoint = {
                 'epoch': epoch + 1,
                 'model_state_dict': eeg_encoder.state_dict(),
@@ -280,6 +323,15 @@ def train_eeg_encoder_improved(eeg_encoder, dataloader, clip_model, clip_preproc
             }
             torch.save(checkpoint, f'improved_eeg_contrastive_encoder_epoch_{epoch+1}.pth')
             print(f"✅ Checkpoint saved: improved_eeg_contrastive_encoder_epoch_{epoch+1}.pth")
+
+    # Final training summary
+    print(f"\n📊 Training Summary:")
+    print(f"   Total epochs completed: {len(train_losses)}")
+    print(f"   Final loss: {train_losses[-1]:.4f}")
+    print(f"   Final accuracy: {train_accuracies[-1]:.3f}")
+    if early_stopping is not None:
+        print(f"   Best loss achieved: {early_stopping.best_loss:.4f}")
+        print(f"   Early stopping used: {'Yes' if early_stopping.counter >= early_stopping.patience else 'No'}")
     
     # Save final model
     final_checkpoint = {
@@ -370,16 +422,17 @@ def main():
     print(f"   Status: 100% TRAINABLE")
     
     # Train EEG encoder with improved strategy
-    print(f"\n🚀 Starting Improved Contrastive Training...")
+    print(f"\n🚀 Starting Extended Contrastive Training...")
     train_losses, train_accuracies = train_eeg_encoder_improved(
         eeg_encoder=eeg_encoder,
         dataloader=dataloader,
         clip_model=clip_model,
         clip_preprocess=clip_preprocess,
         device=device,
-        num_epochs=100,  # Increased epochs
+        num_epochs=300,  # Extended to 300 epochs
         lr=1e-4,
-        warmup_epochs=10
+        warmup_epochs=30,  # Longer warmup
+        use_early_stopping=True  # Enable early stopping
     )
     
     # Plot training curves
