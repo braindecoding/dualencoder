@@ -205,7 +205,7 @@ def train_baseline_model():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
     
     # Training parameters
-    num_epochs = 5000
+    num_epochs = 15000
     best_test_loss = float('inf')
     train_losses = []
     test_losses = []
@@ -277,12 +277,28 @@ def train_baseline_model():
         # Print progress
         print(f"Epoch {epoch+1:3d}: Train Loss = {avg_train_loss:.4f}, Test Loss = {avg_test_loss:.4f}")
         
-        # Early stopping check
-        if epoch > 20 and len(test_losses) > 10:
-            recent_losses = test_losses[-10:]
-            if all(recent_losses[i] >= recent_losses[i+1] for i in range(len(recent_losses)-1)):
-                print(f"🛑 Early stopping at epoch {epoch+1}")
-                break
+        # Improved Early stopping check
+        if epoch > 30 and len(test_losses) > 15:  # Wait longer before considering early stop
+            recent_losses = test_losses[-15:]  # Look at more epochs
+
+            # Check if improvement is minimal (< 0.1% in last 10 epochs)
+            if len(recent_losses) >= 10:
+                improvement_threshold = 0.001  # 0.1% improvement threshold
+                recent_10 = recent_losses[-10:]
+                max_recent = max(recent_10)
+                min_recent = min(recent_10)
+                relative_improvement = (max_recent - min_recent) / max_recent
+
+                # Also check if loss has plateaued (no significant improvement)
+                last_5_avg = np.mean(recent_losses[-5:])
+                prev_5_avg = np.mean(recent_losses[-10:-5])
+                plateau_improvement = (prev_5_avg - last_5_avg) / prev_5_avg
+
+                if relative_improvement < improvement_threshold and plateau_improvement < improvement_threshold:
+                    print(f"🛑 Early stopping at epoch {epoch+1}")
+                    print(f"   Recent improvement: {relative_improvement:.4f} < {improvement_threshold}")
+                    print(f"   Plateau improvement: {plateau_improvement:.4f} < {improvement_threshold}")
+                    break
         
         # Save checkpoint every 20 epochs
         if (epoch + 1) % 20 == 0:
