@@ -17,6 +17,7 @@ import pickle
 import sys
 from pathlib import Path
 from tqdm import tqdm
+import torch
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -360,9 +361,18 @@ def process_organized_data_correctly(organized_data, max_samples_per_digit=500):
     return correctly_processed_data, processing_stats
 
 def main():
-    """Main function to apply CORRECT preprocessing pipeline"""
+    """Main function to apply CORRECT preprocessing pipeline with GPU support"""
     print("🧠 CORRECT EEG PREPROCESSING PIPELINE")
     print("=" * 70)
+
+    # Check GPU availability
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"🖥️  Using device: {device}")
+    if torch.cuda.is_available():
+        print(f"   GPU: {torch.cuda.get_device_name(0)}")
+        print(f"   CUDA Version: {torch.version.cuda}")
+        print(f"   GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+
     print("🎯 CORRECT ORDER:")
     print("   1. Bandpass filtering (on RAW data)")
     print("   2. Artifact removal")
