@@ -172,7 +172,7 @@ def train_baseline_model():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
     
     # Training parameters
-    num_epochs = 100
+    num_epochs = 5
     best_test_loss = float('inf')
     train_losses = []
     test_losses = []
