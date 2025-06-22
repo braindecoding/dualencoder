@@ -146,7 +146,7 @@ def train_baseline_model():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
     
     # Training parameters
-    num_epochs = 100
+    num_epochs = 5000  # Increased for better convergence
     best_test_loss = float('inf')
     train_losses = []
     test_losses = []
@@ -218,12 +218,24 @@ def train_baseline_model():
         # Print progress
         print(f"Epoch {epoch+1:3d}: Train Loss = {avg_train_loss:.4f}, Test Loss = {avg_test_loss:.4f}")
         
-        # Early stopping check
-        if epoch > 20 and len(test_losses) > 10:
-            recent_losses = test_losses[-10:]
-            if all(recent_losses[i] >= recent_losses[i+1] for i in range(len(recent_losses)-1)):
-                print(f"🛑 Early stopping at epoch {epoch+1}")
-                break
+        # Extended Early Stopping Logic (More Patient)
+        if epoch > 100:  # Start checking after 100 epochs (was 50)
+            # Check for plateau: no improvement > 0.05% for 50+ epochs (was 30)
+            if len(test_losses) >= 50:
+                recent_best = min(test_losses[-50:])  # Look at last 50 epochs (was 30)
+                current_best = min(test_losses)
+
+                # Calculate relative improvement
+                if current_best > 0:
+                    improvement = (current_best - recent_best) / current_best
+
+                    # Stop if improvement < 0.05% for last 50 epochs (was 0.1% for 30)
+                    if improvement < 0.0005:  # More strict threshold (was 0.001)
+                        print(f"🛑 Early stopping at epoch {epoch+1}")
+                        print(f"   Reason: No significant improvement (< 0.05%) for 50 epochs")
+                        print(f"   Current best: {current_best:.6f}, Recent best: {recent_best:.6f}")
+                        print(f"   Improvement: {improvement*100:.4f}%")
+                        break
         
         # Save checkpoint every 20 epochs
         if (epoch + 1) % 20 == 0:
