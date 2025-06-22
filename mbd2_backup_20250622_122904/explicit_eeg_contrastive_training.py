@@ -150,8 +150,8 @@ def evaluate_explicit(model, eegData, stimData, labelsData, clip_model, clip_pre
     
     return avg_loss, avg_accuracy
 
-def train_with_explicit_data(eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labelsVal, 
-                           clip_model, clip_preprocess, device, num_epochs=200, 
+def train_with_explicit_data(eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labelsVal,
+                           clip_model, clip_preprocess, device, num_epochs=400,
                            batch_size=32, lr=1e-4):
     """
     Train EEG encoder using explicit data variables
@@ -185,7 +185,10 @@ def train_with_explicit_data(eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labels
         {'params': eeg_encoder.embedding_adapter.parameters(), 'lr': lr * 2}
     ], weight_decay=1e-4)
     
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+    # Improved learning rate scheduling for longer training
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=50, T_mult=2, eta_min=1e-6
+    )
     
     # Loss function
     contrastive_loss_fn = ContrastiveLoss(temperature=0.07).to(device)
@@ -198,7 +201,7 @@ def train_with_explicit_data(eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labels
     
     best_val_accuracy = 0
     patience_counter = 0
-    patience = 25
+    patience = 50  # Increased patience for longer training
     
     for epoch in range(num_epochs):
         # TRAINING PHASE
@@ -299,8 +302,8 @@ def train_with_explicit_data(eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labels
             print(f"   Best validation accuracy: {best_val_accuracy:.3f}")
             break
         
-        # Save checkpoint every 50 epochs
-        if (epoch + 1) % 50 == 0:
+        # Save checkpoint every 100 epochs for longer training
+        if (epoch + 1) % 100 == 0:
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': eeg_encoder.state_dict(),
@@ -362,12 +365,12 @@ def main():
     # Load explicit data
     eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labelsVal, eegTest, stimTest, labelsTest = load_explicit_data()
     
-    # Train model
+    # Train model with extended epochs
     eeg_encoder, training_results = train_with_explicit_data(
-        eegTrn, stimTrn, labelsTrn, 
+        eegTrn, stimTrn, labelsTrn,
         eegVal, stimVal, labelsVal,
         clip_model, clip_preprocess, device,
-        num_epochs=200,
+        num_epochs=400,  # Extended training
         batch_size=32,
         lr=1e-4
     )
