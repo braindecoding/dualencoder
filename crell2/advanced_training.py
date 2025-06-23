@@ -20,6 +20,10 @@ import warnings
 import time
 import pickle
 from datetime import datetime
+from sklearn.model_selection import StratifiedKFold
+from collections import Counter
+import random
+import os
 warnings.filterwarnings("ignore")
 
 # Import our enhanced components
@@ -32,6 +36,21 @@ from advanced_loss_functions import (
     WarmupCosineScheduler
 )
 # from explicit_eeg_contrastive_training import load_explicit_data, evaluate_explicit
+
+def set_random_seeds(seed=42):
+    """
+    Set random seeds for reproducibility across all libraries
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+    print(f"🎲 Random seeds set to {seed} for reproducibility")
 
 def load_crell_data():
     """Load Crell dataset for advanced training"""
@@ -114,7 +133,7 @@ def evaluate_crell(model, eeg_data, stim_data, labels, clip_model, clip_preproce
 
             # Compute similarity and accuracy
             similarities = torch.cosine_similarity(eeg_embeddings, clip_embeddings, dim=1)
-            accuracy = (similarities > 0.5).float().mean()
+            accuracy = (similarities > 0.0).float().mean()  # Changed from 0.5 to 0.0
 
             # Simple loss (negative cosine similarity)
             loss = -similarities.mean()
@@ -148,10 +167,10 @@ class AdvancedTrainingConfig:
         # Training parameters - EXTENDED FOR BETTER CONVERGENCE
         self.num_epochs = 400     # Extended from 300 for better convergence
         self.batch_size = 32
-        self.base_lr = 5e-5  # Lower learning rate
+        self.base_lr = 1e-4  # Increased learning rate
         self.min_lr = 1e-6
         self.warmup_epochs = 20
-        self.patience = 60  # Increased patience
+        self.patience = 30  # Reduced patience
         self.weight_decay = 1e-4
         self.gradient_clip = 1.0
         
@@ -506,20 +525,348 @@ def advanced_training_loop(config):
     
     return model, history, best_val_accuracy, test_accuracy
 
+def run_10fold_cross_validation():
+    """
+    Run 10-fold cross-validation for advanced training
+    """
+    print("🔄 10-FOLD CROSS-VALIDATION - ADVANCED EEG TRAINING")
+    print("=" * 80)
+
+    # Set random seeds for reproducibility
+    set_random_seeds(42)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"🖥️  Device: {device}")
+
+    if torch.cuda.is_available():
+        print(f"   GPU: {torch.cuda.get_device_name(0)}")
+        print(f"   Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+
+    # Load CLIP model once
+    print(f"\n📥 Loading CLIP model...")
+    clip_model, clip_preprocess = clip.load("ViT-B/32", device=device)
+    clip_model.eval()
+    for param in clip_model.parameters():
+        param.requires_grad = False
+    print(f"✅ CLIP model loaded and frozen")
+
+    # Load all data first
+    print(f"\n📂 Loading complete dataset...")
+    eegTrn, stimTrn, labelsTrn, eegVal, stimVal, labelsVal, eegTest, stimTest, labelsTest = load_crell_data()
+
+    # Combine training and validation for CV (keep test separate)
+    all_eeg = np.concatenate([eegTrn, eegVal], axis=0)
+    all_stim = np.concatenate([stimTrn, stimVal], axis=0)
+    all_labels = np.concatenate([labelsTrn, labelsVal], axis=0)
+
+    print(f"✅ Dataset loaded for CV: {len(all_eeg)} samples")
+    print(f"   EEG shape: {all_eeg.shape}")
+    print(f"   Stimulus shape: {all_stim.shape}")
+    print(f"   Labels: {len(all_labels)} samples")
+
+    # Check data distribution
+    label_counts = Counter(all_labels)
+    print(f"   Label distribution: {dict(label_counts)}")
+
+    # Initialize 10-fold cross-validation with stratification
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+    # Store results for each fold
+    fold_results = []
+    all_histories = []
+
+    # Run cross-validation
+    for fold, (train_idx, val_idx) in enumerate(skf.split(all_eeg, all_labels)):
+        print(f"\n🔄 FOLD {fold + 1}/10")
+        print("=" * 60)
+
+        # Set random seeds for this fold
+        fold_seed = 42 + fold
+        set_random_seeds(fold_seed)
+
+        # Split data for this fold
+        fold_eeg_train = all_eeg[train_idx]
+        fold_stim_train = all_stim[train_idx]
+        fold_labels_train = all_labels[train_idx]
+
+        fold_eeg_val = all_eeg[val_idx]
+        fold_stim_val = all_stim[val_idx]
+        fold_labels_val = all_labels[val_idx]
+
+        print(f"   Training: {len(fold_eeg_train)} samples")
+        print(f"   Validation: {len(fold_eeg_val)} samples")
+
+        # Check fold balance
+        train_counts = Counter(fold_labels_train)
+        val_counts = Counter(fold_labels_val)
+        print(f"   Train distribution: {dict(train_counts)}")
+        print(f"   Val distribution: {dict(val_counts)}")
+
+        # Create config for this fold (reduced epochs for CV)
+        config = AdvancedTrainingConfig()
+        config.num_epochs = 150  # Reduced for CV
+        config.patience = 25     # Reduced patience
+        config.eval_frequency = 3  # More frequent evaluation
+
+        # Create model for this fold
+        model = create_advanced_model(config, device)
+
+        # Create loss function
+        loss_fn = create_advanced_loss(config, device)
+
+        # Create optimizer and scheduler
+        optimizer, scheduler = create_advanced_optimizer_and_scheduler(model, config)
+
+        # Training history for this fold
+        fold_history = {
+            'train_losses': [],
+            'train_accuracies': [],
+            'val_losses': [],
+            'val_accuracies': [],
+            'learning_rates': [],
+            'temperatures': []
+        }
+
+        best_val_accuracy = 0
+        patience_counter = 0
+        start_time = time.time()
+
+        print(f"🚀 Training Fold {fold + 1}...")
+
+        # Training loop for this fold
+        for epoch in range(config.num_epochs):
+            # Update learning rate
+            current_lr = scheduler.step(epoch)
+
+            # TRAINING PHASE
+            model.train()
+            epoch_train_loss = 0
+            epoch_train_accuracy = 0
+            num_train_batches = 0
+            epoch_temperature = 0
+
+            # Create training batches
+            train_batches = []
+            indices = np.arange(len(fold_eeg_train))
+            np.random.shuffle(indices)
+
+            for i in range(0, len(indices), config.batch_size):
+                batch_indices = indices[i:i+config.batch_size]
+                batch_eeg = fold_eeg_train[batch_indices]
+                batch_stim = fold_stim_train[batch_indices]
+                batch_labels = fold_labels_train[batch_indices]
+                train_batches.append((batch_eeg, batch_stim, batch_labels))
+
+            # Training batches
+            for batch_data in train_batches:
+                batch_eeg, batch_stim, batch_labels = batch_data
+
+                # Move EEG to device
+                batch_eeg = torch.FloatTensor(batch_eeg).to(device)
+
+                # Preprocess images for CLIP
+                processed_images = []
+                for img in batch_stim:
+                    if isinstance(img, np.ndarray):
+                        if img.max() <= 1.0:
+                            img = (img * 255).astype(np.uint8)
+                        else:
+                            img = img.astype(np.uint8)
+
+                        if len(img.shape) == 2:
+                            img = np.stack([img, img, img], axis=-1)
+
+                        from PIL import Image
+                        img = Image.fromarray(img)
+
+                    processed_img = clip_preprocess(img).unsqueeze(0)
+                    processed_images.append(processed_img)
+                processed_images = torch.cat(processed_images, dim=0).to(device)
+
+                # Forward pass
+                eeg_embeddings = model(batch_eeg)
+
+                with torch.no_grad():
+                    clip_embeddings = clip_model.encode_image(processed_images).float()
+
+                # Compute loss
+                if config.loss_type == 'adaptive_temperature':
+                    loss, accuracy, temperature = loss_fn(eeg_embeddings, clip_embeddings)
+                    epoch_temperature += temperature
+                else:
+                    loss, accuracy = loss_fn(eeg_embeddings, clip_embeddings)
+                    epoch_temperature += config.temperature
+
+                # Backward pass
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.gradient_clip)
+                optimizer.step()
+
+                epoch_train_loss += loss.item()
+                epoch_train_accuracy += accuracy.item()
+                num_train_batches += 1
+
+            # VALIDATION PHASE (every eval_frequency epochs)
+            if (epoch + 1) % config.eval_frequency == 0:
+                val_loss, val_accuracy = evaluate_crell(
+                    model, fold_eeg_val, fold_stim_val, fold_labels_val,
+                    clip_model, clip_preprocess, device, "validation", config.batch_size
+                )
+            else:
+                val_loss = fold_history['val_losses'][-1] if fold_history['val_losses'] else 0
+                val_accuracy = fold_history['val_accuracies'][-1] if fold_history['val_accuracies'] else 0
+
+            # Record metrics
+            avg_train_loss = epoch_train_loss / num_train_batches if num_train_batches > 0 else 0
+            avg_train_accuracy = epoch_train_accuracy / num_train_batches if num_train_batches > 0 else 0
+            avg_temperature = epoch_temperature / num_train_batches if num_train_batches > 0 else config.temperature
+
+            fold_history['train_losses'].append(avg_train_loss)
+            fold_history['train_accuracies'].append(avg_train_accuracy)
+            fold_history['val_losses'].append(val_loss)
+            fold_history['val_accuracies'].append(val_accuracy)
+            fold_history['learning_rates'].append(current_lr)
+            fold_history['temperatures'].append(avg_temperature)
+
+            # Early stopping and best model saving
+            if val_accuracy > best_val_accuracy:
+                best_val_accuracy = val_accuracy
+                patience_counter = 0
+
+                # Save best model for this fold
+                torch.save(model.state_dict(), f'advanced_eeg_fold_{fold+1}_best.pth')
+            else:
+                patience_counter += 1
+
+            # Print progress every 10 epochs
+            if (epoch + 1) % 10 == 0:
+                print(f"      Epoch {epoch+1}: Train Loss={avg_train_loss:.4f}, Train Acc={avg_train_accuracy:.3f}, Val Acc={val_accuracy:.3f}")
+
+            # Early stopping
+            if patience_counter >= config.patience:
+                print(f"      🛑 Early stopping at epoch {epoch+1}")
+                break
+
+        training_time = time.time() - start_time
+
+        # Final evaluation for this fold
+        model.load_state_dict(torch.load(f'advanced_eeg_fold_{fold+1}_best.pth'))
+        model.eval()
+
+        # Calculate final metrics on validation set
+        final_val_loss, final_val_accuracy = evaluate_crell(
+            model, fold_eeg_val, fold_stim_val, fold_labels_val,
+            clip_model, clip_preprocess, device, "final_validation", config.batch_size
+        )
+
+        # Store results for this fold
+        fold_result = {
+            'fold': fold + 1,
+            'best_val_accuracy': best_val_accuracy,
+            'final_val_accuracy': final_val_accuracy,
+            'training_time': training_time,
+            'epochs_trained': len(fold_history['train_losses']),
+            'train_samples': len(fold_eeg_train),
+            'val_samples': len(fold_eeg_val)
+        }
+
+        fold_results.append(fold_result)
+        all_histories.append(fold_history)
+
+        print(f"   ✅ Fold {fold + 1} completed:")
+        print(f"      Best Val Accuracy: {best_val_accuracy:.4f} ({best_val_accuracy*100:.1f}%)")
+        print(f"      Final Val Accuracy: {final_val_accuracy:.4f} ({final_val_accuracy*100:.1f}%)")
+        print(f"      Training time: {training_time/60:.1f} minutes")
+        print(f"      Epochs trained: {len(fold_history['train_losses'])}")
+
+    # Calculate cross-validation statistics
+    val_accuracies = [result['best_val_accuracy'] for result in fold_results]
+    final_accuracies = [result['final_val_accuracy'] for result in fold_results]
+
+    mean_val_acc = np.mean(val_accuracies)
+    std_val_acc = np.std(val_accuracies)
+    mean_final_acc = np.mean(final_accuracies)
+    std_final_acc = np.std(final_accuracies)
+
+    print(f"\n📊 10-FOLD CROSS-VALIDATION RESULTS:")
+    print(f"=" * 60)
+    for i, result in enumerate(fold_results):
+        print(f"   Fold {i+1}: Best={result['best_val_accuracy']:.4f}, Final={result['final_val_accuracy']:.4f}, Time={result['training_time']/60:.1f}min")
+
+    print(f"\n🎯 SUMMARY STATISTICS:")
+    print(f"   Best Validation Accuracy: {mean_val_acc:.4f} ± {std_val_acc:.4f} ({mean_val_acc*100:.1f}% ± {std_val_acc*100:.1f}%)")
+    print(f"   Final Validation Accuracy: {mean_final_acc:.4f} ± {std_final_acc:.4f} ({mean_final_acc*100:.1f}% ± {std_final_acc*100:.1f}%)")
+
+    # Test on held-out test set using best fold model
+    best_fold_idx = np.argmax(val_accuracies)
+    best_fold_num = best_fold_idx + 1
+
+    print(f"\n🏆 TESTING ON HELD-OUT TEST SET:")
+    print(f"   Using best fold model: Fold {best_fold_num} (accuracy: {val_accuracies[best_fold_idx]:.4f})")
+
+    # Load best fold model
+    model = create_advanced_model(AdvancedTrainingConfig(), device)
+    model.load_state_dict(torch.load(f'advanced_eeg_fold_{best_fold_num}_best.pth'))
+    model.eval()
+
+    # Test evaluation
+    test_loss, test_accuracy = evaluate_crell(
+        model, eegTest, stimTest, labelsTest,
+        clip_model, clip_preprocess, device, "test", 32
+    )
+
+    print(f"   Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.1f}%)")
+
+    # Save complete results
+    cv_results = {
+        'fold_results': fold_results,
+        'cv_statistics': {
+            'mean_val_accuracy': mean_val_acc,
+            'std_val_accuracy': std_val_acc,
+            'mean_final_accuracy': mean_final_acc,
+            'std_final_accuracy': std_final_acc,
+            'test_accuracy': test_accuracy,
+            'best_fold': best_fold_num
+        },
+        'all_histories': all_histories
+    }
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    with open(f'advanced_cv_results_10fold_{timestamp}.pkl', 'wb') as f:
+        pickle.dump(cv_results, f)
+
+    print(f"\n🏆 FINAL 10-FOLD CV RESULTS:")
+    print(f"   Cross-Validation Accuracy: {mean_val_acc:.4f} ± {std_val_acc:.4f} ({mean_val_acc*100:.1f}% ± {std_val_acc*100:.1f}%)")
+    print(f"   Test Set Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.1f}%)")
+    print(f"   Results saved: advanced_cv_results_10fold_{timestamp}.pkl")
+
+    return cv_results, all_histories
+
 def main():
     """
-    Main function to run advanced training
+    Main function with 10-fold cross-validation
     """
-    # Create configuration
-    config = AdvancedTrainingConfig()
-    
-    # Run training
-    model, history, best_val_acc, test_acc = advanced_training_loop(config)
-    
-    # Plot results
-    plot_advanced_results(history, best_val_acc, test_acc)
-    
-    return model, history
+    print("🎯 ADVANCED EEG TRAINING - 10-FOLD CROSS-VALIDATION")
+    print("=" * 80)
+    print("Enhanced EEG Transformer with Contrastive Learning")
+    print("Dataset: Crell (10 letters: a,d,e,f,j,n,o,s,t,v)")
+    print("=" * 80)
+
+    # Run 10-fold cross-validation
+    cv_results, histories = run_10fold_cross_validation()
+
+    # Plot results using first fold history as example
+    plot_advanced_results(histories[0], cv_results['cv_statistics']['mean_val_accuracy'],
+                         cv_results['cv_statistics']['test_accuracy'])
+
+    print(f"\n🎯 Advanced Training 10-Fold CV Complete!")
+    stats = cv_results['cv_statistics']
+    print(f"   Cross-Validation Accuracy: {stats['mean_val_accuracy']:.4f} ± {stats['std_val_accuracy']:.4f}")
+    print(f"   Test Set Accuracy: {stats['test_accuracy']:.4f}")
+    print(f"   Best Fold: {stats['best_fold']}")
+
+    return cv_results, histories
 
 def plot_advanced_results(history, best_val_acc, test_acc):
     """
