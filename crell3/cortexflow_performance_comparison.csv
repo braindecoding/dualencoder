@@ -1,0 +1,7 @@
+Method,Venue,SSIM,Pixel Correlation,MSE,Multi-modal,Real-time
+Baseline,Custom,0.3,0.45,0.35,❌,✅
+MinD-Vis,CVPR 2023,0.319,0.6,0.15,❌,❌
+MindEye,NeurIPS 2023,0.4,0.7,0.12,❌,❌
+MindEye2,ICML 2024,0.43,0.75,0.1,❌,❌
+DGMM,Various,0.268,0.611,0.159,❌,❌
+CortexFlow,Dissertation,0.833,0.973,0.039,✅,✅

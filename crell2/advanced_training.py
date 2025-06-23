@@ -187,7 +187,7 @@ class AdvancedTrainingConfig:
         
         # Monitoring
         self.save_frequency = 50
-        self.eval_frequency = 5
+        # self.eval_frequency = 5  # REMOVED - now evaluate every epoch
         
     def __str__(self):
         return f"""Advanced Training Configuration (CRELL DATASET):
@@ -436,15 +436,11 @@ def advanced_training_loop(config):
                 'LR': f'{current_lr:.2e}'
             })
         
-        # VALIDATION PHASE (every eval_frequency epochs)
-        if (epoch + 1) % config.eval_frequency == 0:
-            val_loss, val_accuracy = evaluate_crell(
-                model, eegVal, stimVal, labelsVal,
-                clip_model, clip_preprocess, device, "validation", config.batch_size
-            )
-        else:
-            val_loss, val_accuracy = history['val_losses'][-1] if history['val_losses'] else 0, \
-                                   history['val_accuracies'][-1] if history['val_accuracies'] else 0
+        # VALIDATION PHASE (EVERY EPOCH - FIXED!)
+        val_loss, val_accuracy = evaluate_crell(
+            model, eegVal, stimVal, labelsVal,
+            clip_model, clip_preprocess, device, "validation", config.batch_size
+        )
         
         # Record metrics
         avg_train_loss = epoch_train_loss / num_train_batches
@@ -606,7 +602,7 @@ def run_10fold_cross_validation():
         config = AdvancedTrainingConfig()
         config.num_epochs = 150  # Reduced for CV
         config.patience = 25     # Reduced patience
-        config.eval_frequency = 3  # More frequent evaluation
+        # config.eval_frequency = 3  # REMOVED - now evaluate every epoch
 
         # Create model for this fold
         model = create_advanced_model(config, device)
@@ -707,15 +703,11 @@ def run_10fold_cross_validation():
                 epoch_train_accuracy += accuracy.item()
                 num_train_batches += 1
 
-            # VALIDATION PHASE (every eval_frequency epochs)
-            if (epoch + 1) % config.eval_frequency == 0:
-                val_loss, val_accuracy = evaluate_crell(
-                    model, fold_eeg_val, fold_stim_val, fold_labels_val,
-                    clip_model, clip_preprocess, device, "validation", config.batch_size
-                )
-            else:
-                val_loss = fold_history['val_losses'][-1] if fold_history['val_losses'] else 0
-                val_accuracy = fold_history['val_accuracies'][-1] if fold_history['val_accuracies'] else 0
+            # VALIDATION PHASE (EVERY EPOCH - FIXED!)
+            val_loss, val_accuracy = evaluate_crell(
+                model, fold_eeg_val, fold_stim_val, fold_labels_val,
+                clip_model, clip_preprocess, device, "validation", config.batch_size
+            )
 
             # Record metrics
             avg_train_loss = epoch_train_loss / num_train_batches if num_train_batches > 0 else 0

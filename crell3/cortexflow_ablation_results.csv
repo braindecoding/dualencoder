@@ -1,0 +1,14 @@
+Study_Type,Configuration,SSIM,Pixel_Correlation
+unified_framework,full_unified,0.833,0.973
+unified_framework,eeg_only,0.7,0.85
+unified_framework,fmri_only,0.6,0.8
+unified_framework,separate_fusion,0.75,0.9
+contrastive_learning,full_contrastive,0.833,0.973
+contrastive_learning,no_contrastive,0.7497,0.9243499999999999
+contrastive_learning,single_pathway,0.70805,0.8757
+contrastive_learning,contrastive_only,0.6664,0.82705
+patch_clip,32x32x49_clip,0.833,0.973
+patch_clip,32x32_2d_clip,0.76636,0.9243499999999999
+patch_clip,16x16x49_clip,0.73304,0.8951600000000001
+patch_clip,global_clip,0.70805,0.8757
+patch_clip,no_clip,0.6664,0.82705
