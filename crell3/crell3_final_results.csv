@@ -1,0 +1,2 @@
+model_name,dataset,architecture,input_type,output_type,num_samples,mse_mean,ssim_mean,psnr_mean,pixcorr_mean,fid_mean,clip_similarity_mean
+Crell3_EEG_Baseline_Regression,Crell_EEG_Letters,"[512] → [1024, 2048, 1024] → [784]",EEG_embeddings_512dim,28x28_grayscale_images,26,0.2960962572923073,0.2763376794971355,11.366346105435623,0.44035565853118896,0.048475511372089386,0.8939107656478882

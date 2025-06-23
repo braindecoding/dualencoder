@@ -1,0 +1,2 @@
+model_name,dataset,architecture,input_type,output_type,num_samples,mse_mean,ssim_mean,psnr_mean,pixcorr_mean,fid_mean,clip_similarity_mean
+Digit69_Baseline_Regression,Digit69_fMRI,"[512] → [1024, 2048, 1024] → [784]",fMRI_embeddings_512dim,28x28_grayscale_images,10,0.17164057940244676,0.4118151375602611,13.800858184323076,0.78288733959198,0.012905744835734367,0.9099081754684448

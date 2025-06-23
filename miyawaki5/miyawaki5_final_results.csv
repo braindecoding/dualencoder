@@ -1,0 +1,2 @@
+model_name,dataset,architecture,input_type,output_type,num_samples,mse_mean,ssim_mean,psnr_mean,pixcorr_mean,fid_mean,clip_similarity_mean
+Miyawaki5_Baseline_Regression,Miyawaki_fMRI,"[512] → [1024, 2048, 1024] → [784]",fMRI_embeddings_512dim,28x28_grayscale_images,12,0.03902122098952532,0.8331200740243675,21.470784401238177,0.9728155136108398,0.0014198006829246879,0.9789859652519226

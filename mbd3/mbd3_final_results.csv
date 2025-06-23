@@ -1,0 +1,2 @@
+model_name,dataset,architecture,input_type,output_type,num_samples,mse_mean,ssim_mean,psnr_mean,pixcorr_mean,fid_mean,clip_similarity_mean
+MBD3_EEG_Baseline_Regression,MindBigData_EEG,"[512] → [1024, 2048, 1024] → [784]",EEG_embeddings_512dim,28x28_grayscale_images,750,0.22822895077615976,0.2549397369535562,12.938734771683903,0.5678396224975586,0.01673354022204876,0.8661314845085144
